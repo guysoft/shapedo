@@ -180,6 +180,9 @@ Thingiloader = function(event) {
     var vertices = [];
     var faces = [];
     var materials = [];
+    var added = 0;
+    var removed = 0;
+    var same = 0;
     
     workerFacadeMessage({'status':'message', 'content':'Merging vertices...'});
     // Merge all the vertices uniquely into new key/value structure
@@ -215,7 +218,8 @@ Thingiloader = function(event) {
       face_hash[face] = i;
       faces.push(face);
       // Start with all faces set to Removed
-      materials.push("Removed");
+      materials.push(2);
+      removed++;
     }
     
     workerFacadeMessage({'status':'message', 'content':'Adding diff faces...'});
@@ -238,14 +242,17 @@ Thingiloader = function(event) {
         // This face is new to the new object
         face_hash[face] = faces.length;
         faces.push(face);
-        materials.push("Added");
+        materials.push(1);
+        added++;
       } else {
         // Face stayed around between the objects
-        materials[faceIndex] = "Same";
+        materials[faceIndex] = 0;
+        removed--;
+        same++;
       }
     }
     
-    workerFacadeMessage({'status':'message', 'content':'parsed ' + parseInt(vertices.length) + ' vertices, ' + parseInt(faces.length) + ' faces...'});
+    workerFacadeMessage({'status':'message', 'content':'parsed ' + vertices.length + ' vertices, ' + faces.length + ' faces ('+ same + ' same, ' + added + ' added, ' + removed + ' removed)...'});
     
     return [vertices, faces, materials];
   };

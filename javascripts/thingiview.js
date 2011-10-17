@@ -47,7 +47,12 @@ Thingiview = function(containerId) {
   var rotate = false;
   var backgroundColor = '#606060';
   var objectMaterial = 'solid';
-  var objectColor = 0xffffff;
+  var objectColor = 0xC0D8F0;
+  var addedColor = 0xC0FFF0;
+  var addedOpacity = 0.5;
+  var removedColor = 0xff6666;
+  var removedOpacity = 0.5;
+  var materials = [];
   var showPlane = true;
   var isWebGl = false;
 
@@ -65,26 +70,26 @@ Thingiview = function(containerId) {
     container.style.position = 'relative';
     container.innerHTML      = '';
 
-  	camera = new THREE.Camera(45, width/ height, 1, 100000);
+  	camera = new THREE.PerspectiveCamera(45, width/ height, 1, 100000);
   	camera.updateMatrix();
 
   	scene  = new THREE.Scene();
 
     ambientLight = new THREE.AmbientLight(0x202020);
-    scene.addLight(ambientLight);
+    scene.add(ambientLight);
     
     directionalLight = new THREE.DirectionalLight(0xffffff, 0.75);
     directionalLight.position.x = 1;
     directionalLight.position.y = 1;
     directionalLight.position.z = 2;
     directionalLight.position.normalize();
-    scene.addLight(directionalLight);
+    scene.add(directionalLight);
     
     pointLight = new THREE.PointLight(0xffffff, 0.3);
     pointLight.position.x = 0;
     pointLight.position.y = -25;
     pointLight.position.z = 10;
-    scene.addLight(pointLight);
+    scene.add(pointLight);
 
     progressBar = document.createElement('div');
     progressBar.style.position = 'absolute';
@@ -111,6 +116,15 @@ Thingiview = function(containerId) {
     alertBox.style.display = 'none';
     alertBox.style.zIndex = 100;
     container.appendChild(alertBox);
+    
+    materials[0] = new THREE.MeshLambertMaterial({id:"Standard", color:objectColor, shading: THREE.FlatShading});
+    materials[1] = new THREE.MeshLambertMaterial({id:"Added", color:addedColor, opacity:addedOpacity, shading: THREE.FlatShading});
+    materials[2] = new THREE.MeshLambertMaterial({id:"Removed", color:removedColor, opacity:removedOpacity, shading: THREE.FlatShading});
+    if (objectMaterial == 'wireframe') {
+      for (var i = 0; i < materials.length; i++) {
+        materials[i].wireframe = true;
+      }
+    }
     
     // load a blank object
     // this.loadSTLString('');
@@ -509,6 +523,9 @@ Thingiview = function(containerId) {
   }
 
   this.setObjectMaterial = function(type) {
+    for (var i = 0; i < materials.length; i++) {
+      materials[i].wireframe = (type == 'wireframe');
+    }
     objectMaterial = type;
 
     loadObjectGeometry();
@@ -524,8 +541,45 @@ Thingiview = function(containerId) {
 
   this.setObjectColor = function(color) {
     objectColor = parseInt(color.replace(/\#/g, ''), 16);
+    if (materials[0]) {
+      materials[0].color = objectColor;
+    }
     
     loadObjectGeometry();
+  }
+  
+  this.setAddedColor = function(color) {
+    addedColor = parseInt(color.replace(/\#/g, ''), 16);
+    if (materials[1]) {
+      materials[1].color = addedColor;
+    }
+    
+    loadObjectGeometry();
+  }
+  
+  this.setRemovedColor = function(color) {
+    removedColor = parseInt(color.replace(/\#/g, ''), 16);
+    if (materials[2]) {
+      materials[2].color = removedColor;
+    }
+    
+    loadObjectGeometry();
+  }
+  
+  this.setAddedOpacity = function(opacity) {
+    addedOpacity = parseInt(opacity);
+    
+    if (materials[1]) {
+      materials[1].opacity = addedOpacity;
+    }
+  }
+  
+  this.setRemovedOpacity = function(opacity) {
+    removedOpacity = parseInt(opacity);
+    
+    if (materials[2]) {
+      materials[2].opacity = removedOpacity;
+    }
   }
 
   this.loadSTL = function(url) {
@@ -573,11 +627,6 @@ Thingiview = function(containerId) {
       // Using method from http://msdn.microsoft.com/en-us/library/bb197900(v=xnagamestudio.10).aspx
       // log("bounding sphere radius = " + geometry.boundingSphere.radius);
 
-      // look at the center of the object
-      camera.target.position.x = geometry.center_x;
-      camera.target.position.y = geometry.center_y;
-      camera.target.position.z = geometry.center_z;
-
       // set camera position to center of sphere
       camera.position.x = geometry.center_x;
       camera.position.y = geometry.center_y;
@@ -598,17 +647,20 @@ Thingiview = function(containerId) {
       pointLight.position.x = geometry.center_y;
       pointLight.position.y = geometry.center_y;
       pointLight.position.z = geometry.max_z * 2;
+      
+      // look at the center of the object
+      camera.lookAt(new THREE.Vector3( geometry.center_x, geometry.center_y, geometry.center_z ));
     } else {
       // set to any valid position so it doesn't fail before geometry is available
       camera.position.y = -70;
       camera.position.z = 70;
-      camera.target.position.z = 0;
+      camera.lookAt(new THREE.Vector3( camera.position.x, camera.position.y, 0 ));
     }
   }
 
   this.loadArray = function(array) {
     log("loading array...");
-    geometry = new STLGeometry(array);
+    geometry = new STLGeometry(array, materials);
     loadObjectGeometry();
     scope.setRotation(false);
     scope.setRotation(true);
@@ -624,8 +676,7 @@ Thingiview = function(containerId) {
     worker.onmessage = function(event) {
       if (event.data.status == "complete") {
         progressBar.innerHTML = 'Initializing geometry...';
-        // scene.removeObject(object);
-        geometry = new STLGeometry(event.data.content);
+        geometry = new STLGeometry(event.data.content, materials);
         loadObjectGeometry();
         progressBar.innerHTML = '';
         progressBar.style.display = 'none';
@@ -653,7 +704,7 @@ Thingiview = function(containerId) {
         particles = new THREE.ParticleSystem( geometry, material );
         particles.sortParticles = true;
         particles.updateMatrix();
-        scene.addObject( particles );
+        scene.add( particles );
                                 
         camera.updateMatrix();
         renderer.render(scene, camera);
@@ -701,38 +752,21 @@ Thingiview = function(containerId) {
   function loadPlaneGeometry() {
     // TODO: switch to lines instead of the Plane object so we can get rid of the horizontal lines in canvas renderer...
     plane = new THREE.Mesh(new Plane(100, 100, 10, 10), new THREE.MeshBasicMaterial({color:0xafafaf,wireframe:true}));
-    scene.addObject(plane);
+    scene.add(plane);
   }
 
   function loadObjectGeometry() {
     if (scene && geometry) {
-      if (objectMaterial == 'wireframe') {
-        // material = new THREE.MeshColorStrokeMaterial(objectColor, 1, 1);
-        material = new THREE.MeshBasicMaterial({color:objectColor,wireframe:true});
-      } else {
-        if (isWebGl) {
-          // material = new THREE.MeshPhongMaterial(objectColor, objectColor, 0xffffff, 50, 1.0);
-          // material = new THREE.MeshColorFillMaterial(objectColor);
-          // material = new THREE.MeshLambertMaterial({color:objectColor});
-          material = new THREE.MeshLambertMaterial({color:objectColor, shading: THREE.FlatShading});
-        } else {
-          // material = new THREE.MeshColorFillMaterial(objectColor);
-          material = new THREE.MeshLambertMaterial({color:objectColor, shading: THREE.FlatShading});
-        }
-      }
-
-      // scene.removeObject(object);      
-
       if (object) {
         // shouldn't be needed, but this fixes a bug with webgl not removing previous object when loading a new one dynamically
         object.materials = [new THREE.MeshBasicMaterial({color:0xffffff, opacity:0})];
-        scene.removeObject(object);        
+        scene.remove(object);        
         // object.geometry = geometry;
         // object.materials = [material];
       }
 
-      object = new THREE.Mesh(geometry, material);
-  		scene.addObject(object);
+      object = new THREE.Mesh(geometry, new THREE.MeshFaceMaterial());
+  		scene.add(object);
 
       if (objectMaterial != 'wireframe') {
         object.overdraw = true;
@@ -750,7 +784,7 @@ Thingiview = function(containerId) {
 
 };
 
-var STLGeometry = function(stlArray) {
+var STLGeometry = function(stlArray, materials) {
   // log("building geometry...");
 	THREE.Geometry.call(this);
 
@@ -760,12 +794,21 @@ var STLGeometry = function(stlArray) {
   // var normals  = stlArray[1];
   // var faces    = stlArray[2];
 
+  this.materials = materials;
+
   for (var i=0; i<stlArray[0].length; i++) {    
     v(stlArray[0][i][0], stlArray[0][i][1], stlArray[0][i][2]);
   }
 
-  for (var i=0; i<stlArray[1].length; i++) {
-    f3(stlArray[1][i][0], stlArray[1][i][1], stlArray[1][i][2]);
+  // use passed in materials if we have them
+  if (stlArray.length == 3) {
+    for (var i=0; i<stlArray[1].length; i++) {
+      f3(stlArray[1][i][0], stlArray[1][i][1], stlArray[1][i][2], this.materials[stlArray[2][i]]);
+    }
+  } else {
+    for (var i=0; i<stlArray[1].length; i++) {
+      f3(stlArray[1][i][0], stlArray[1][i][1], stlArray[1][i][2], this.materials[0]);
+    }
   }
 
   function v(x, y, z) {
@@ -773,9 +816,9 @@ var STLGeometry = function(stlArray) {
     scope.vertices.push( new THREE.Vertex( new THREE.Vector3( x, y, z ) ) );
   }
 
-  function f3(a, b, c) {
+  function f3(a, b, c, m) {
     // log("adding face: " + a + "," + b + "," + c)
-    scope.faces.push( new THREE.Face3( a, b, c ) );
+    scope.faces.push( new THREE.Face3( a, b, c, null, null, m ) );
   }
 
   // log("computing centroids...");
@@ -783,7 +826,6 @@ var STLGeometry = function(stlArray) {
   // log("computing normals...");
   // this.computeNormals();
 	this.computeFaceNormals();
-	this.sortFacesByMaterial();
   // log("finished building geometry");
 
   scope.min_x = 0;
