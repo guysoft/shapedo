@@ -532,6 +532,10 @@ Thingiview = function(containerId) {
     scope.newWorker('loadSTL', url);
   }
 
+  this.loadSTLDiff = function(urls) {
+    scope.newWorker('loadSTLDiff', urls);
+  }
+
   this.loadOBJ = function(url) {
     scope.newWorker('loadOBJ', url);
   }

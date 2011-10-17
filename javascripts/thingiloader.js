@@ -11,33 +11,55 @@ Thingiloader = function(event) {
   	return req.responseText;
   };
 
+  this.looksLikeBinary = function(reader) {
+    // STL files don't specify a way to distinguish ASCII from binary.
+    // The usual way is checking for "solid" at the start of the file --
+    // but Thingiverse has seen at least one binary STL file in the wild
+    // that breaks this.
+
+    // The approach here is different: binary STL files contain a triangle
+    // count early in the file.  If this correctly predicts the file's length,
+    // it is most probably a binary STL file.
+
+    reader.seek(80);  // skip the header
+    var count = reader.readUInt32();
+
+    var predictedSize = 80 /* header */ + 4 /* count */ + 50 * count;
+    return reader.getSize() == predictedSize;
+  };
+
   this.loadSTL = function(url) {
-    var looksLikeBinary = function(reader) {
-      // STL files don't specify a way to distinguish ASCII from binary.
-      // The usual way is checking for "solid" at the start of the file --
-      // but Thingiverse has seen at least one binary STL file in the wild
-      // that breaks this.
-
-      // The approach here is different: binary STL files contain a triangle
-      // count early in the file.  If this correctly predicts the file's length,
-      // it is most probably a binary STL file.
-
-      reader.seek(80);  // skip the header
-      var count = reader.readUInt32();
-
-      var predictedSize = 80 /* header */ + 4 /* count */ + 50 * count;
-      return reader.getSize() == predictedSize;
-    };
-
     workerFacadeMessage({'status':'message', 'content':'Downloading ' + url});  
     var file = this.load_binary_resource(url);
     var reader = new BinaryReader(file);
 
-    if (looksLikeBinary(reader)) {
+    if (this.looksLikeBinary(reader)) {
       this.loadSTLBinary(reader);
     } else {
       this.loadSTLString(file);
     }
+  };
+
+  this.loadSTLDiff = function(urls) {
+    if (urls.length != 2) {
+      workerFacadeMessage({'status':'message', 'content':'loadSTLDiff requires two files'});
+      return false;
+    }
+    
+    var objects = [];
+    for (var i = 0; i < 2; i++) {
+      workerFacadeMessage({'status':'message', 'content':'Downloading ' + urls[i]});
+      var file = this.load_binary_resource(urls[i]);
+      var reader = new BinaryReader(file);
+
+      if (this.looksLikeBinary(reader)) {
+        objects.push(this.ParseSTLBinary(reader));
+      } else {
+        objects.push(this.ParseSTLString(file));
+      }
+    }
+    
+    this.loadDiff(objects);
   };
 
   this.loadOBJ = function(url) {
@@ -62,6 +84,11 @@ Thingiloader = function(event) {
     } else {
       this.loadPLYBinary(file);
     }
+  };
+
+  this.loadDiff = function(Objects) {
+    workerFacadeMessage({'status':'message', 'content':'Generating Diff...'});  
+    workerFacadeMessage({'status':'complete', 'content':this.GenerateDiff(Objects)});
   };
 
   this.loadSTLString = function(STLString) {
@@ -145,6 +172,82 @@ Thingiloader = function(event) {
 
   this.ParsePLYBinary = function(input) {
     return false;
+  };
+
+  this.GenerateDiff = function(input) {
+    var vert_hash = {};
+    var face_hash = {};
+    var vertices = [];
+    var faces = [];
+    var materials = [];
+    
+    workerFacadeMessage({'status':'message', 'content':'Merging vertices...'});
+    // Merge all the vertices uniquely into new key/value structure
+    for (var i = 0; i < 2; i++) {
+      for (var j = 0; j < input[i][0].length; j++) {
+        if ((i % 100) == 0) {
+          workerFacadeMessage({'status':'progress', 'content':parseInt((j / input[i][0].length) * 100) + '%'});
+        }
+        var vertex = input[i][0][j];
+        var vertexIndex = vert_hash[vertex];
+        if (vertexIndex == null) {
+          vertexIndex = vertices.length;
+          vertices.push(vertex);
+          vert_hash[vertex] = vertexIndex;
+        }
+      }
+    }
+    
+    workerFacadeMessage({'status':'message', 'content':'Adding original faces...'});
+    // First add the faces of the old object
+    for (var i = 0; i < input[0][1].length; i++) {
+      if ((i % 100) == 0) {
+        workerFacadeMessage({'status':'progress', 'content':parseInt((i / input[0][1].length) * 100) + '%'});
+      }
+    
+      var face = [];
+      // Match to the new vertex array
+      for (var j = 0; j < 3; j++) {
+        var oldIndex = input[0][1][i][j];
+        var newIndex = vert_hash[input[0][0][oldIndex]];
+        face.push(newIndex);
+      }
+      face_hash[face] = i;
+      faces.push(face);
+      // Start with all faces set to Removed
+      materials.push("Removed");
+    }
+    
+    workerFacadeMessage({'status':'message', 'content':'Adding diff faces...'});
+    // Then go through the faces of the new object
+    for (var i = 0; i < input[1][1].length; i++) {
+      if ((i % 100) == 0) {
+        workerFacadeMessage({'status':'progress', 'content':parseInt((i / input[1][1].length) * 100) + '%'});
+      }
+    
+      var face = [];
+      // Match to the new vertex array
+      for (var j = 0; j < 3; j++) {
+        var oldIndex = input[1][1][i][j];
+        var newIndex = vert_hash[input[1][0][oldIndex]];
+        face.push(newIndex);
+      }
+      
+      var faceIndex = face_hash[face];
+      if (faceIndex == null) {
+        // This face is new to the new object
+        face_hash[face] = faces.length;
+        faces.push(face);
+        materials.push("Added");
+      } else {
+        // Face stayed around between the objects
+        materials[faceIndex] = "Same";
+      }
+    }
+    
+    workerFacadeMessage({'status':'message', 'content':'parsed ' + parseInt(vertices.length) + ' vertices, ' + parseInt(faces.length) + ' faces...'});
+    
+    return [vertices, faces, materials];
   };
 
   this.ParseSTLBinary = function(input) {
@@ -280,6 +383,9 @@ Thingiloader = function(event) {
   switch(event.data.cmd) {
     case "loadSTL":
     this.loadSTL(event.data.param);
+    break;
+    case "loadSTLDiff":
+    this.loadSTLDiff(event.data.param);
     break;
     case "loadSTLString":
     this.loadSTLString(event.data.param);
