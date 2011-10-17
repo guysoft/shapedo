@@ -553,8 +553,6 @@ Thingiview = function(containerId) {
     if (materials[1]) {
       materials[1].color = addedColor;
     }
-    
-    loadObjectGeometry();
   }
   
   this.setRemovedColor = function(color) {
@@ -562,12 +560,10 @@ Thingiview = function(containerId) {
     if (materials[2]) {
       materials[2].color = removedColor;
     }
-    
-    loadObjectGeometry();
   }
   
   this.setAddedOpacity = function(opacity) {
-    addedOpacity = parseInt(opacity);
+    addedOpacity = parseFloat(opacity);
     
     if (materials[1]) {
       materials[1].opacity = addedOpacity;
@@ -575,7 +571,7 @@ Thingiview = function(containerId) {
   }
   
   this.setRemovedOpacity = function(opacity) {
-    removedOpacity = parseInt(opacity);
+    removedOpacity = parseFloat(opacity);
     
     if (materials[2]) {
       materials[2].opacity = removedOpacity;
