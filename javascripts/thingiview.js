@@ -544,8 +544,6 @@ Thingiview = function(containerId) {
     if (materials[0]) {
       materials[0].color = objectColor;
     }
-    
-    loadObjectGeometry();
   }
   
   this.setAddedColor = function(color) {
