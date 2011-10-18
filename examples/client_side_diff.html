@@ -19,6 +19,25 @@
   <script src="../javascripts/plane.js"></script>
   <script src="../javascripts/thingiview.js"></script>
 
+  <script type="text/javascript">
+    function getCheckedValue(radioObj) {
+	    if(!radioObj)
+		    return "";
+	    var radioLength = radioObj.length;
+	    if(radioLength == undefined)
+		    if(radioObj.checked)
+			    return radioObj.value;
+		    else
+			    return "";
+	    for(var i = 0; i < radioLength; i++) {
+		    if(radioObj[i].checked) {
+			    return radioObj[i].value;
+		    }
+	    }
+	    return "";
+    }
+  </script>
+
   <script>
     window.onload = function() {
       // You may want to place these lines inside an onload handler
@@ -45,6 +64,24 @@
 <header>
   <h1><a href="http://github.com/tbuser/thingiview.js">Thingiview.js</a> Client Side Diff Example</h1>
 </header>
+
+<div id="sidebar" style="float:right;width:40%">
+  <h3>STL Diffs</h3>
+    <ul>
+    <li><a href="#" onclick="thingiview.loadSTLDiff(['../examples/objects/frame-vertex-with-foot.stl', '../examples/objects/frame-vertex-without-foot.stl'])">render</a> <a href="https://github.com/prusajr/PrusaMendel/tree/master/stl">Prusa Mendel</a> frame vertex with and without foot</li>
+    <li><a href="#" onclick="thingiview.loadSTLDiff(['../examples/objects/key1.stl', '../examples/objects/key2.stl'])">render</a> Difference between two household keys</li>
+    </ul>
+    
+  <h3>Revision Example - <a href="https://github.com/prusajr/PrusaMendel/blob/master/stl/x-carriage.stl">Prusa Mendel X-Carriage</a></h3>
+    <form name="githubDiff" method="get" action="" onsubmit="return false;">
+      <input type="radio" value="../examples/objects/x-carriage4.stl" name="old" id="old0"> <input type="radio" value="../examples/objects/x-carriage4.stl" name="new" id="new0"> Revision 4</br>
+      <input type="radio" value="../examples/objects/x-carriage3.stl" name="old" id="old0"> <input type="radio" value="../examples/objects/x-carriage3.stl" name="new" id="new0"> Revision 3</br>
+      <input type="radio" value="../examples/objects/x-carriage2.stl" name="old" id="old0"> <input type="radio" value="../examples/objects/x-carriage2.stl" name="new" id="new0"> Revision 2</br>
+      <input type="radio" value="../examples/objects/x-carriage1.stl" name="old" id="old0"> <input type="radio" value="../examples/objects/x-carriage1.stl" name="new" id="new0"> Revision 1</br>
+      <input type="radio" value="../examples/objects/x-carriage0.stl" name="old" id="old0"> <input type="radio" value="../examples/objects/x-carriage0.stl" name="new" id="new0"> Revision 0</br>
+      <input type="button" onclick="thingiview.loadSTLDiff([getCheckedValue(document.forms['githubDiff'].elements['old']), getCheckedValue(document.forms['githubDiff'].elements['new'])])" value="Show Diff">
+    </form>
+</div>
 
 <p>
   <input onclick="thingiview.setCameraView('top');" type="button" value="Top" /> 
