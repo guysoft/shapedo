@@ -588,6 +588,10 @@ Thingiview = function(containerId) {
     scope.newWorker('loadOBJ', url);
   }
   
+  this.loadOBJDiff = function(urls) {
+    scope.newWorker('loadOBJDiff', urls);
+  }
+  
   this.loadSTLString = function(STLString) {
     scope.newWorker('loadSTLString', STLString);
   }
@@ -602,6 +606,10 @@ Thingiview = function(containerId) {
 
   this.loadJSON = function(url) {
     scope.newWorker('loadJSON', url);
+  }
+  
+  this.loadJSONDiff = function(urls) {
+    scope.newWorker('loadJSONDiff', urls);
   }
 
   this.loadPLY = function(url) {

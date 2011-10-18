@@ -68,10 +68,44 @@ Thingiloader = function(event) {
     this.loadOBJString(file);
   };
 
+  this.loadOBJDiff = function(urls) {
+    if (urls.length != 2) {
+      workerFacadeMessage({'status':'message', 'content':'loadOBJDiff requires two files'});
+      return false;
+    }
+    
+    var objects = [];
+    for (var i = 0; i < 2; i++) {
+      workerFacadeMessage({'status':'message', 'content':'Downloading ' + urls[i]});
+      var file = this.load_binary_resource(urls[i]);
+      
+      objects.push(this.ParseOBJString(file));
+    }
+    
+    this.loadDiff(objects);
+  };
+
   this.loadJSON = function(url) {
     workerFacadeMessage({'status':'message', 'content':'Downloading ' + url});
     var file = this.load_binary_resource(url);
     this.loadJSONString(file);
+  };
+  
+  this.loadJSONDiff = function(urls) {
+    if (urls.length != 2) {
+      workerFacadeMessage({'status':'message', 'content':'loadJSONDiff requires two files'});
+      return false;
+    }
+    
+    var objects = [];
+    for (var i = 0; i < 2; i++) {
+      workerFacadeMessage({'status':'message', 'content':'Downloading ' + urls[i]});
+      var file = this.load_binary_resource(urls[i]);
+      
+      objects.push(eval(file));
+    }
+    
+    this.loadDiff(objects);
   };
   
   this.loadPLY = function(url) {
@@ -403,11 +437,17 @@ Thingiloader = function(event) {
     case "loadOBJ":
     this.loadOBJ(event.data.param);
     break;
+    case "loadOBJDiff":
+    this.loadOBJDiff(event.data.param);
+    break;
     case "loadOBJString":
     this.loadOBJString(event.data.param);
     break;
     case "loadJSON":
     this.loadJSON(event.data.param);
+    break;
+    case "loadJSONDiff":
+    this.loadJSONDiff(event.data.param);
     break;
     case "loadPLY":
     this.loadPLY(event.data.param);
