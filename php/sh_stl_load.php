@@ -44,7 +44,7 @@ function sd_parse_stl_string($str) {
     }
   }
   
-  $sd_faces=[];
+  $sd_faces = array();
   foreach($face_vertexes as $face) {
   	$sd_faces[getFaceKey($face[0],$face[1],$face[2])] = $face;
   }
@@ -96,7 +96,7 @@ function sd_parse_stl_binary($fp) {
 		$attribute = unpack("S", $data);
 	}
 
-    $sd_faces=[];
+    $sd_faces = array();
     foreach($face_vertexes as $face) {
     	$sd_faces[getFaceKey($face[0],$face[1],$face[2])] = $face;
     }
@@ -104,7 +104,7 @@ function sd_parse_stl_binary($fp) {
   return $sd_faces;
 }
 
-function SDloadSTL($file){
+function SDloadSTL($file, $binary = false){
 	$file_parts = pathinfo($file);
 
 	$handle = fopen($file, 'rb');
@@ -123,7 +123,7 @@ function SDloadSTL($file){
 
 	switch($file_parts['extension']){
 		case 'stl':
-			if (stripos($contents, 'solid') === FALSE) {
+			if (stripos($contents, 'solid') === FALSE || $binary) {
 				$result = sd_parse_stl_binary($handle);
 			} else {
 				//$result = parse_stl_string($contents);
