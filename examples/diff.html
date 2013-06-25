@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="en" class="no-js">
+<head>
+  <title>Thingiview.js Server Side Ajax Examples</title>
+
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+  
+  <script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/chrome-frame/1/CFInstall.min.js"></script>
+  <style>
+   .chromeFrameInstallDefaultStyle {
+     margin-top: 10px;
+     width: 800px;
+     border: 5px solid blue;
+   }
+  </style>
+  
+  <script src="../javascripts/Three.js"></script>
+  <script src="../javascripts/plane.js"></script>
+  <script src="../javascripts/thingiview.js"></script>
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/1.10.1/jquery.min.js"></script>
+
+  <script>
+	function loadShape() {
+		var url1 = $('#url1').val();
+		var url2 = $('#url2').val();
+		
+		//thingiview.loadSTLDiff(["../examples/objects/frame-vertex-with-foot.stl", "../examples/objects/frame-vertex-without-foot.stl"]);
+		thingiview.loadJSONDiff(["../php/json.php?file=" + url1, "../php/json.php?file=" + url2]);
+		//thingiview.loadJSON("../php/json.php?file=" + url1);
+	}
+  
+    window.onload = function() {
+      // You may want to place these lines inside an onload handler
+      CFInstall.check({
+        mode: "inline", // the default
+        node: "prompt"
+      });
+
+      thingiurlbase = "../javascripts";
+      thingiview = new Thingiview("viewer");
+      thingiview.setObjectColor('#C0D8F0');
+      thingiview.initScene();
+      // thingiview.setShowPlane(true);
+      //thingiview.loadJSON("../php/json.php?file=http://localhost/thingiview/examples/objects/cube.stl");
+    }
+  </script>
+</head>
+<body>
+
+<div id="prompt">
+  <!-- if IE without GCF, prompt goes here -->
+</div>
+
+<header>
+  <h1><a href="http://github.com/tbuser/thingiview.js">Thingiview.js</a> Server Side Ajax Examples</h1>
+</header>
+
+<div id="sidebar" style="float:right;width:40%">
+  
+  <p>
+  <label for="url1">URL1:</label>
+  <!--  <input type="text" id="url1" value="http://localhost/shapedoo/shapedoo/stls/RaspberryPi_v14-topslot-top.stl" style="width: 400px;">  -->
+  <input type="text" id="url1" value="http://www.thingiverse.com/download:75151" style="width: 400px;">
+  </p>
+  <p>
+  <label for="url2">URL2:</label>
+  <input type="text" id="url2" value="http://localhost/shapedoo/shapedoo/stls/temp/monkey_bump.stl" style="width: 400px;">
+  </p>
+  
+  <button onclick="loadShape()">Load</button>
+  
+</div>
+
+<p>
+  <input onclick="thingiview.setCameraView('top');" type="button" value="Top" /> 
+  <input onclick="thingiview.setCameraView('side');" type="button" value="Side" /> 
+  <input onclick="thingiview.setCameraView('bottom');" type="button" value="Bottom" /> 
+  <input onclick="thingiview.setCameraView('diagonal');" type="button" value="Diagonal" /> 
+ 
+  <input onclick="thingiview.setCameraZoom(5);" type="button" value="Zoom +" /> 
+  <input onclick="thingiview.setCameraZoom(-5);" type="button" value="Zoom -" /> 
+ 
+  Rotation: <input onclick="thingiview.setRotation(true);" type="button" value="on" /> | <input onclick="thingiview.setRotation(false);" type="button" value="off" />
+</p>
+
+<div id="viewer" style="width:50%;height:400px"></div>
+
+<p>
+  <input onclick="thingiview.setObjectMaterial('wireframe');" type="button" value="Wireframe" /> 
+  <input onclick="thingiview.setObjectMaterial('solid');" type="button" value="Solid" />
+</p>
+
+<p>
+  Plane: <a href="#" onclick="thingiview.setShowPlane(false)">Hide</a> | <a href="#" onclick="thingiview.setShowPlane(true)">Show</a><br/>
+  Background Color: <a href="#" onclick="thingiview.setBackgroundColor('#606060')">Gray</a> | <a href="#" onclick="thingiview.setBackgroundColor('#ffffff')">White</a> | <a href="#" onclick="thingiview.setBackgroundColor('#000000')">Black</a><br/>
+  Object Color: <a href="#" onclick="thingiview.setObjectColor('#ffffff')">White</a> | <a href="#" onclick="thingiview.setObjectColor('#aa0000')">Red</a> | <a href="#" onclick="thingiview.setObjectColor('#CDFECD')">Green</a> | <a href="#" onclick="thingiview.setObjectColor('#C0D8F0')">Blue</a><br/>
+</p>
+
+<footer>
+  &larr; <a href="index.html">Other Examples</a>
+</footer>
+
+</body>
+</html>
