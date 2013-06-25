@@ -6,6 +6,7 @@
 set_time_limit(3000);
 
 //include('convert.php');
+include('config.php');
 include('sh_stl_load.php');
 
 function loadSTL($file){
@@ -102,8 +103,8 @@ function sortVertecies($json_stl){
   $face_vertexes = $stl[1];
   function cmp($a, $b)
   {
-      if ([$a] == $b) {
-	  return 0;
+      if ($a == $b) {
+	  	return 0;
       }
       return ($a < $b) ? -1 : 1;
   }
@@ -136,10 +137,10 @@ function json2sdjson($a){
 	 */
 	$vertexes = $a[0];
 	$face_vertexes = $a[1];
-	$returnValue = [];
+	$returnValue = array();
 	for($i = 0; $i < count($face_vertexes); $i++){
 		$key = getFaceKey($vertexes[$face_vertexes[$i][0]], $vertexes[$face_vertexes[$i][1]], $vertexes[$face_vertexes[$i][2]]);
-		$returnValue[$key] = [];
+		$returnValue[$key] = array();
 		for($j = 0; $j < count($face_vertexes[$i]); $j++){
 			$returnValue[$key][$j] = $vertexes[$face_vertexes[$i][$j]];
 		}	
@@ -153,12 +154,12 @@ function sdjson_2_json($a){
 	/*
 	 *  Take a shapedoo json and convert it to a thingiview json format 
 	 */
-	$returnValue = [];
-	$returnValue[0] = [];
-	$returnValue[1] = [];
+	$returnValue = array();
+	$returnValue[0] = array();
+	$returnValue[1] = array();
 	$verticesCount = 0;
 	for($i = 0; $i < count($a); $i++){
-		$returnValue[1][$i] = [];
+		$returnValue[1][$i] = array();
 		$faceVerCount = 0;
 		for($j = 0; $j < count($a[$i]); $j++){
 			
@@ -177,7 +178,7 @@ function shjson_diff($a,$b){
 	/*
 	 * Returns the faces that are in $a but not in $b
 	 */
-	$diff = [];
+	$diff = array();
 	foreach ($a as $key => $value) {
 		if ( ! array_key_exists($key,$b) ){
 			$diff[$key] = $value;
@@ -198,7 +199,7 @@ function isPermitation($a,$b){
 	} 
 	
 	//keep track of how many times each element occurs.
-	$counts = [];
+	$counts = array();
 	foreach ($a as $keyA => $valueA) {
 		$hashA = getPointKey($valueA);
 		
@@ -245,17 +246,28 @@ function equalizePermitations(&$a,&$b,&$inA,&$inB){
 }
 
 echo "Running\n";
-$fileName1 = "/var/www/thingiview.js/stls/US_Map.stl";
-$fileName2 = "/var/www/thingiview.js/stls/US_Map_bin.stl";
-//$fileName1 = "/var/www/thingiview.js/stls/xclip.stl";
-//$fileName2 = "/var/www/thingiview.js/stls/xclip_bin.stl";
+//$fileName1 = $basePath . "US_Map.stl";
+//$fileName2 = $basePath . "US_Map_bin.stl";
+//$fileName1 = $basePath . "xclip.stl";
+//$fileName2 = $basePath . "xclip_bin.stl";
+$fileName1 = "monkey.stl";
+$fileName2 = "monkey_bump.stl";
 
-//$fileName1 = "/tmp/a1.stl";
-//$fileName2 = "/tmp/a2.stl";
+// check that files exists
+if (! file_exists($config['stlDir'] . $fileName1)) {
+	echo 'File ' . $config['stlDir'] . $fileName1 . ' not exists';
+	exit;
+}
+
+if (! file_exists($config['stlDir'] . $fileName2)) {
+	echo 'File ' . $config['stlDir'] . $fileName2 . ' not exists';
+	exit;
+}
+
 echo "load1\n";
-$result1 = (SDloadSTL($fileName1));
+$result1 = (SDloadSTL($config['stlDir'] . $fileName1));
 echo "load2\n";
-$result2 = (SDloadSTL($fileName2));
+$result2 = (SDloadSTL($config['stlDir'] . $fileName2));
 
 echo "Make diffs\n";
 $inA = shjson_diff($result1,$result2);
@@ -264,12 +276,14 @@ $inB = shjson_diff($result2,$result1);
 equalizePermitations($result1,$result2,$inA,$inB);
 
 echo "Write fixed\n";
-file_put_contents("/tmp/w1.stl",shjson_to_stl($result1));
-file_put_contents("/tmp/w2.stl",shjson_to_stl($result2));
+file_put_contents($config['tmpDir'] . $fileName1, shjson_to_stl($result1));
+file_put_contents($config['tmpDir'] . $fileName2 , shjson_to_stl($result2));
 
 echo "Write diffs\n";
-file_put_contents("/tmp/inA.stl",shjson_to_stl($inA));
-file_put_contents("/tmp/inB.stl",shjson_to_stl($inB));
+$exploded1 = explode('.', $fileName1);
+$exploded2 = explode('.', $fileName2);
+file_put_contents($config['tmpDir'] . $exploded1[0] . '.diff.stl', shjson_to_stl($inA));
+file_put_contents($config['tmpDir'] . $exploded2[0] . '.diff.stl', shjson_to_stl($inB));
 
 //print_stl_from_json($result1);
 //echo shjson_to_stl($result1);
