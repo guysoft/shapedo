@@ -11,7 +11,7 @@ function getFaceKey($p1,$p2,$p3){
 	return $key;
 }
 
-function sd_parse_stl_string($str) {
+function sd_parse_stl_string($str,$round = 3) {
 	//TODO:make more efficient
   $lines = split("\n", $str);
   
@@ -37,7 +37,7 @@ function sd_parse_stl_string($str) {
     } else {
       preg_match('/vertex (.*) (.*) (.*)$/', $line, $matches);
       if (count($matches) > 1) {
-        $vertex = array((float)$matches[1], (float)$matches[2], (float)$matches[3]);
+        $vertex = array(round((float)$matches[1],$round), round((float)$matches[2],$round), round((float)$matches[3],$round));
         
         $face_vertexes[$normal_count][] = $vertex;
       }
@@ -52,7 +52,7 @@ function sd_parse_stl_string($str) {
   return $sd_faces;
 }
 
-function sd_parse_stl_binary($fp) {
+function sd_parse_stl_binary($fp,$round = 3) {
 	$vertexes = array();
 	$faces    = array();
 
@@ -82,7 +82,7 @@ function sd_parse_stl_binary($fp) {
 				$points[] = unpack("f", $data);
 			}
 
-			$vertex = array($points[0][1], $points[1][1], $points[2][1]);
+			$vertex = array(round($points[0][1],$round), round($points[1][1],$round), round($points[2][1],$round));
 
 			if (!in_array($vertex, $vertexes)) {
 				$vertexes[] = $vertex;
